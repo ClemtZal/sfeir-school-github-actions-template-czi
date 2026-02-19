@@ -1,0 +1,27 @@
+name: reusable workflow
+on:
+  workflow_call:
+    inputs:
+      node_version:
+        required: false
+        default: "tls"
+        type: string
+
+jobs:
+  run-npm-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v6
+      - name: display node version
+        run: echo "### Node version ${{inputs.node_version}}! :rocket:" >> $GITHUB_STEP_SUMMARY
+      - name: setup node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "${{ inputs.node_version }}"
+      - name: run test
+        shell: bash
+        run: |
+          node -v
+          npm install
+          npm test
