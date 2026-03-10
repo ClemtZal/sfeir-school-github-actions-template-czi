@@ -1,0 +1,44 @@
+name: interact with Github API
+on:
+    pull_request:
+
+jobs:
+    create-issue:
+        permissions:
+            issues: write
+        runs-on: ubuntu-latest
+        env:
+            NODE_VERSION: 24
+        # outputs:
+        #     SHORT_SHA: ${{ steps.github-short.outputs.SHORT_SHA }} 
+        steps:
+            - name: checkout
+              uses: actions/checkout@v6
+            - name: setup node
+              uses: actions/setup-node@v6
+              with:
+                  # Version Spec of the version to use in SemVer notation.
+                  # It also admits such aliases as lts/*, latest, nightly and canary builds
+                  # Examples: 12.x, 10.15.1, >=10.15.0, lts/Hydrogen, 16-nightly, latest, node
+                  node-version: "${{ env.NODE_VERSION }}"
+            - name: run test
+              shell: bash
+              run: |
+                  node -v
+                  npm install
+                  npm test
+            - name: github short output
+              id: github-short
+              run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+            - name: Create issue
+              shell: bash
+              run: |
+                  curl --request POST \
+                  --url https://api.github.com/repos/${{ github.repository }}/issues \
+                  --header 'authorization: Bearer ${{ secrets.PAT }}' \
+                  --header 'content-type: application/json' \
+                  --data '{
+                      "title": "Automated issue for commit: ${{ steps.github-short.outputs.SHORT_SHA }}",
+                      "body": "This issue was automatically created by the GitHub Action workflow **${{ github.workflow }}**. \n\n The commit hash was: _${{ steps.short_sha.outputs.sha_short }}_."
+                      }' \
+                  --fail
